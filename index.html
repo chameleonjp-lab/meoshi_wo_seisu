@@ -626,6 +626,7 @@
           <div class="player-panel">
             <p id="playerNameView">名前：未登録</p>
             <button id="changeNameBtn" class="btn ghost small" type="button">名前を変更</button>
+            <label><input id="guestMode" type="checkbox"> 今回は名前なしで遊ぶ</label>
           </div>
 
           <div class="best-panel">
@@ -641,7 +642,7 @@
             <a class="btn ghost" href="https://chameleonjp.codeberg.page/chameleonjp_lab/">他のゲームで遊ぶ</a>
           </div>
 
-          <p class="note">ゲーム開始には名前登録が必要です。クリア時はランキングへ自動送信します。</p>
+          <p class="note">名前なしでも両方のモードで遊べます。開始時に有効な名前を選んだプレイのクリア結果だけ、ランキングへ送信します。</p>
         </div>
       </section>
 
@@ -725,12 +726,12 @@
 
   <div id="nameModal" class="modal-backdrop" role="dialog" aria-modal="true">
     <div class="modal">
-      <h3>名前登録（必須）</h3>
-      <p>ゲーム開始前に名前の登録が必要です。ランキングに使う名前を入力してください。次回以降もこのブラウザに保存します。</p>
+      <h3>ランキング用の名前（任意）</h3>
+      <p>ランキングに使うときだけ名前を登録します。名前は開始時に固定され、このブラウザに保存します。名前なしで遊んでも、保存済みの名前は消えません。</p>
       <input id="nameInput" class="input" type="text" maxlength="16" placeholder="例：カメレオン" autocomplete="nickname">
       <div class="button-stack">
         <button id="saveNameBtn" class="btn primary" type="button">保存する</button>
-        <button id="closeNameBtn" class="btn ghost" type="button">ゲーム開始をやめる</button>
+        <button id="closeNameBtn" class="btn ghost" type="button">閉じる</button>
       </div>
     </div>
   </div>
@@ -821,6 +822,7 @@
         result: $('resultScreen')
       },
       playerNameView: $('playerNameView'),
+      guestMode: $('guestMode'),
       normalBestView: $('normalBestView'),
       hardBestView: $('hardBestView'),
       changeNameBtn: $('changeNameBtn'),
@@ -867,8 +869,10 @@
       toast: $('toast')
     };
 
-    let pendingStartMode = null;
-    let pendingScoreSubmit = false;
+    let activeScreen = 'home';
+    let pendingPlay = null;
+    let selectedName = null;
+    let runSerial = 0;
     let toastTimer = null;
     let countdownTimer = null;
     let spinReadyTimer = null;
@@ -904,6 +908,8 @@
         smallAttackCount: 0,
         noDamageCount: 0,
         resultType: null,
+        play: null,
+        scoreAttempted: false,
         scoreSubmitted: false,
         scoreSubmitMessage: '送信待機中',
         isBestUpdated: false,
@@ -912,6 +918,7 @@
     }
 
     function showScreen(name) {
+      activeScreen = name;
       Object.values(dom.screens).forEach((screen) => screen.classList.remove('active'));
       dom.screens[name].classList.add('active');
       requestAnimationFrame(() => {
@@ -928,100 +935,100 @@
       modal.classList.remove('active');
     }
 
+    function readStored(key) {
+      try { return localStorage.getItem(key); } catch (_) { return null; }
+    }
+
+    function writeStored(key, value) {
+      try { localStorage.setItem(key, value); return true; } catch (_) { return false; }
+    }
+
+    function normalizePlayName(input) {
+      if (typeof input !== 'string') return '';
+      const value = input.trim();
+      if (!value || value.length > 16 || /[\p{Cc}\p{Cs}\p{Zl}\p{Zp}]/u.test(value)
+        || !/[^\p{Default_Ignorable_Code_Point}\s]/u.test(value)) return '';
+      return value;
+    }
+
     function getPlayerName() {
-      return (localStorage.getItem(STORAGE_NAME) || '').trim();
+      if (selectedName === null) selectedName = normalizePlayName(readStored(STORAGE_NAME));
+      return selectedName;
     }
 
     function setPlayerName(name) {
-      localStorage.setItem(STORAGE_NAME, name.trim().slice(0, 16));
+      selectedName = normalizePlayName(name);
+      if (selectedName) writeStored(STORAGE_NAME, selectedName);
       updateHomeInfo();
     }
 
     function updateHomeInfo() {
       const name = getPlayerName();
-      dom.playerNameView.textContent = name ? `名前：${name}` : '名前：未登録';
+      dom.playerNameView.textContent = name ? `名前：${name}` : '名前：未登録（ゲスト）';
       dom.normalBestView.textContent = `ノーマル ベスト：${getBestText('normal')}`;
       dom.hardBestView.textContent = `ハード ベスト：${getBestText('hard')}`;
     }
 
     function getBestText(modeKey) {
-      const raw = localStorage.getItem(MODES[modeKey].bestKey);
+      const raw = readStored(MODES[modeKey].bestKey);
       return raw ? `${raw}ゲーム` : 'まだありません';
     }
 
     function requestStart(modeKey) {
-      localStorage.setItem(STORAGE_LAST_MODE, modeKey);
-      pendingStartMode = modeKey;
-      pendingScoreSubmit = false;
-      if (!getPlayerName()) {
-        dom.nameInput.value = '';
-        dom.closeNameBtn.textContent = 'ゲーム開始をやめる';
-        openModal(dom.nameModal);
-        setTimeout(() => dom.nameInput.focus(), 80);
-        showToast('ゲーム開始前に名前を登録してください');
-        return;
-      }
-      pendingStartMode = null;
-      beginCountdown(modeKey);
+      if (activeScreen !== 'home' || pendingPlay || !Object.hasOwn(MODES, modeKey)) return;
+      writeStored(STORAGE_LAST_MODE, modeKey);
+      beginCountdown(modeKey, dom.guestMode.checked ? '' : getPlayerName());
     }
 
     function saveNameFromInput() {
-      const value = dom.nameInput.value.trim().replace(/\s+/g, ' ');
+      const value = normalizePlayName(dom.nameInput.value);
       if (!value) {
-        showToast('名前を入力してください');
+        if (!dom.nameInput.value.trim()) {
+          dom.guestMode.checked = true;
+          closeModal(dom.nameModal);
+          return;
+        }
+        showToast('無効な名前です。名前なしでも遊べます。');
         return;
       }
       setPlayerName(value);
+      dom.guestMode.checked = false;
       closeModal(dom.nameModal);
-      dom.closeNameBtn.textContent = '閉じる';
-      if (pendingStartMode) {
-        const modeToStart = pendingStartMode;
-        pendingStartMode = null;
-        beginCountdown(modeToStart);
-        return;
-      }
-      if (pendingScoreSubmit) {
-        pendingScoreSubmit = false;
-        submitScore();
-      }
     }
 
     function cancelNameModal() {
-      if (pendingStartMode) {
-        pendingStartMode = null;
-        pendingScoreSubmit = false;
-        dom.closeNameBtn.textContent = '閉じる';
-        closeModal(dom.nameModal);
-        showToast('ゲーム開始をキャンセルしました');
-        return;
-      }
-      pendingScoreSubmit = false;
-      dom.closeNameBtn.textContent = '閉じる';
       closeModal(dom.nameModal);
     }
 
-    function beginCountdown(modeKey) {
+    function beginCountdown(modeKey, name) {
+      if (pendingPlay) return;
       clearAllTimers();
       const mode = MODES[modeKey];
+      const play = Object.freeze({ name, modeKey, serial: ++runSerial });
+      pendingPlay = play;
       dom.countdownMode.textContent = mode.label;
       showScreen('countdown');
       let n = 3;
       dom.countdownNumber.textContent = String(n);
-      countdownTimer = setInterval(() => {
+      const timer = setInterval(() => {
+        if (pendingPlay !== play || countdownTimer !== timer || activeScreen !== 'countdown') return;
         n -= 1;
         if (n <= 0) {
-          clearInterval(countdownTimer);
+          clearInterval(timer);
           countdownTimer = null;
-          startGame(modeKey);
+          pendingPlay = null;
+          startGame(modeKey, play);
         } else {
           dom.countdownNumber.textContent = String(n);
         }
       }, 900);
+      countdownTimer = timer;
     }
 
-    function startGame(modeKey) {
+    function startGame(modeKey, play) {
       const mode = MODES[modeKey];
       game = createBlankGame();
+      game.play = play;
       game.mode = mode;
       game.enemy = pick(ENEMIES);
       game.maxHp = mode.hp;
@@ -1464,21 +1471,14 @@
       renderResult();
       showScreen('result');
 
-      if (type === 'clear') {
-        setTimeout(() => {
-          if (game.resultType === 'clear' && game.phase === 'finished' && !game.scoreSubmitted) {
-            submitScore();
-          }
-        }, 250);
-      }
+      if (type === 'clear' && game.play?.name) void submitScore();
     }
 
     function saveBest() {
       const key = game.mode.bestKey;
-      const current = Number(localStorage.getItem(key));
+      const current = Number(readStored(key));
       if (!current || game.turns < current) {
-        localStorage.setItem(key, String(game.turns));
-        game.isBestUpdated = true;
+        game.isBestUpdated = writeStored(key, String(game.turns));
       } else {
         game.isBestUpdated = false;
       }
@@ -1508,11 +1508,12 @@
         <div class="result-row"><span>ベスト</span><strong>${escapeHtml(bestText)}</strong></div>
       `;
 
-      game.scoreSubmitted = false;
-      game.scoreSubmitMessage = isClear ? 'ランキング自動送信中...' : 'リタイア結果の送信はありません。';
+      const canSubmit = isClear && Boolean(game.play?.name);
+      game.scoreSubmitMessage = canSubmit ? 'ランキング自動送信中...'
+        : isClear ? '名前なしで開始したため、ランキングには送信しません。' : 'リタイア結果の送信はありません。';
       dom.sendStatus.textContent = game.scoreSubmitMessage;
       dom.sendScoreBtn.disabled = true;
-      dom.sendScoreBtn.textContent = isClear ? '自動送信中' : '登録対象外';
+      dom.sendScoreBtn.textContent = canSubmit ? '自動送信中' : '登録対象外';
       dom.rankingLink.href = `${DETAIL_RANKING_URL}?game=${encodeURIComponent(DETAIL_DISPLAY_GAME_SLUG)}`;
     }
 
@@ -1521,20 +1522,10 @@
     }
 
     async function submitScore() {
-      if (game.resultType !== 'clear') return;
-      if (game.scoreSubmitted) {
-        dom.sendStatus.textContent = 'この結果は送信済みです。';
-        dom.sendScoreBtn.textContent = '自動送信済み';
-        dom.sendScoreBtn.disabled = true;
-        return;
-      }
-      const playerName = getPlayerName();
-      if (!playerName) {
-        dom.sendStatus.textContent = '名前がないため自動送信できません。ホームで名前を登録してから遊んでください。';
-        dom.sendScoreBtn.textContent = '自動送信失敗';
-        dom.sendScoreBtn.disabled = true;
-        return;
-      }
+      const result = game;
+      if (activeScreen !== 'result' || result.resultType !== 'clear' || !result.play?.name || result.scoreAttempted) return;
+      const current = () => game === result && activeScreen === 'result';
+      result.scoreAttempted = true;
       if (!isSupabaseReady()) {
         dom.sendStatus.textContent = 'Supabase設定が未完了のため送信できません。';
         dom.sendScoreBtn.textContent = '自動送信失敗';
@@ -1554,9 +1545,9 @@
             'Content-Type': 'application/json'
           },
           body: JSON.stringify({
-            p_display_name: playerName,
-            p_game_slug: GAME_SLUGS[game.mode.key],
-            p_score: game.turns,
+            p_display_name: result.play.name,
+            p_game_slug: GAME_SLUGS[result.play.modeKey],
+            p_score: result.turns,
             p_client_version: CLIENT_VERSION
           })
         });
@@ -1564,11 +1555,13 @@
         if (!response.ok) {
           throw new Error(responseText || `HTTP ${response.status}`);
         }
-        game.scoreSubmitted = true;
+        result.scoreSubmitted = true;
+        if (!current()) return;
         dom.sendStatus.textContent = 'ランキングへ自動登録しました。';
         dom.sendScoreBtn.textContent = '自動送信済み';
         dom.sendScoreBtn.disabled = true;
       } catch (error) {
+        if (!current()) return;
         console.error(error);
         dom.sendStatus.textContent = 'ランキング自動送信に失敗しました。通信状況かSupabase設定を確認してください。';
         dom.sendScoreBtn.textContent = '自動送信失敗';
@@ -1577,11 +1570,13 @@
     }
 
     function retrySameMode() {
-      beginCountdown(game.mode.key);
+      if (activeScreen !== 'result' || !game.play) return;
+      beginCountdown(game.play.modeKey, game.play.name);
     }
 
     function finishToHome() {
       clearAllTimers();
+      pendingPlay = null;
       game = createBlankGame();
       updateHomeInfo();
       showScreen('home');
@@ -1694,16 +1689,13 @@
       bindTap(dom.closeRuleBtn, () => closeModal(dom.ruleModal));
       bindTap(dom.changeNameBtn, () => {
         dom.nameInput.value = getPlayerName();
-        pendingStartMode = null;
-        pendingScoreSubmit = false;
-        dom.closeNameBtn.textContent = '閉じる';
         openModal(dom.nameModal);
         setTimeout(() => dom.nameInput.focus(), 60);
       });
       bindTap(dom.saveNameBtn, saveNameFromInput);
       bindTap(dom.closeNameBtn, cancelNameModal);
       dom.nameInput.addEventListener('keydown', (event) => {
-        if (event.key === 'Enter') saveNameFromInput();
+        if (event.key === 'Enter' && !event.isComposing) saveNameFromInput();
       });
       bindTap(dom.shareGameBtn, () => copyText(buildGameShareText()));
       bindTap(dom.actionBtn, handleAction);
