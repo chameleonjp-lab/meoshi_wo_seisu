@@ -1,0 +1,1746 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+  <title>目押しを制す</title>
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="目押しを制す">
+  <meta property="og:description" content="横に流れる3本のリールを止めて、敵を倒す目押しゲーム。">
+  <meta property="og:url" content="https://chameleonjp-lab.github.io/meoshi_wo_seisu/">
+  <meta property="og:image" content="https://chameleonjp-lab.github.io/meoshi_wo_seisu/social-card-v1.jpg">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="目押しを制す：敵のHPと3本のリール、青い回転開始ボタン">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="目押しを制す">
+  <meta name="twitter:description" content="横に流れる3本のリールを止めて、敵を倒す目押しゲーム。">
+  <meta name="twitter:image" content="https://chameleonjp-lab.github.io/meoshi_wo_seisu/social-card-v1.jpg">
+  <meta name="twitter:image:alt" content="目押しを制す：敵のHPと3本のリール、青い回転開始ボタン">
+  <link rel="canonical" href="https://chameleonjp-lab.github.io/meoshi_wo_seisu/">
+  <style>
+    :root {
+      --bg: #0f141f;
+      --bg2: #172033;
+      --card: rgba(26, 34, 52, 0.96);
+      --card2: rgba(38, 49, 73, 0.92);
+      --text: #f6f8ff;
+      --muted: #b7c1d8;
+      --line: rgba(255, 255, 255, 0.14);
+      --blue: #2176ff;
+      --blue2: #155bd1;
+      --red: #ef4444;
+      --red2: #c92d2d;
+      --green: #22c55e;
+      --yellow: #facc15;
+      --shadow: 0 14px 42px rgba(0, 0, 0, 0.34);
+    }
+
+    * {
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    html,
+    body {
+      width: 100%;
+      min-height: 100%;
+      margin: 0;
+      overflow-x: hidden;
+      background: radial-gradient(circle at top, #263653 0%, var(--bg) 46%, #070a10 100%);
+      color: var(--text);
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      touch-action: manipulation;
+      overscroll-behavior: none;
+    }
+
+    body {
+      min-height: 100svh;
+    }
+
+    button,
+    a,
+    input {
+      font: inherit;
+    }
+
+    button,
+    a {
+      touch-action: manipulation;
+    }
+
+    button {
+      border: 0;
+      cursor: pointer;
+    }
+
+    a {
+      text-decoration: none;
+      color: inherit;
+    }
+
+    input {
+      user-select: text;
+      -webkit-user-select: text;
+    }
+
+    .app {
+      width: 100%;
+      min-height: 100svh;
+      padding: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .shell {
+      width: min(100%, 430px);
+    }
+
+    .screen {
+      display: none;
+    }
+
+    .screen.active {
+      display: block;
+    }
+
+    .card,
+    .game-layout {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 20px;
+      background: linear-gradient(180deg, var(--card), rgba(15, 20, 31, 0.98));
+      box-shadow: var(--shadow);
+      padding: 14px;
+    }
+
+    .home-card,
+    .result-card,
+    .countdown-card {
+      text-align: center;
+    }
+
+    .eyebrow {
+      margin: 0 0 6px;
+      color: var(--yellow);
+      font-size: 0.76rem;
+      font-weight: 900;
+      letter-spacing: 0.04em;
+    }
+
+    h1,
+    h2,
+    h3 {
+      margin: 0;
+      line-height: 1.15;
+    }
+
+    h1 {
+      font-size: clamp(2.1rem, 12vw, 3.3rem);
+      letter-spacing: -0.05em;
+    }
+
+    h2 {
+      font-size: 1.55rem;
+    }
+
+    h3 {
+      font-size: 1.25rem;
+    }
+
+    .lead {
+      margin: 10px 0;
+      color: var(--muted);
+      font-size: 0.94rem;
+      line-height: 1.55;
+      font-weight: 700;
+    }
+
+    .player-panel,
+    .best-panel,
+    .mini-panel {
+      margin: 12px 0;
+      padding: 10px;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: rgba(255, 255, 255, 0.06);
+      text-align: left;
+      font-size: 0.9rem;
+      font-weight: 800;
+    }
+
+    .best-panel p,
+    .player-panel p,
+    .mini-panel p {
+      margin: 3px 0;
+    }
+
+    .button-stack {
+      display: grid;
+      gap: 9px;
+      margin-top: 12px;
+    }
+
+    .btn {
+      min-height: 46px;
+      padding: 0 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 999px;
+      color: #fff;
+      font-weight: 1000;
+      letter-spacing: 0.02em;
+      box-shadow: 0 10px 24px rgba(0, 0, 0, 0.22);
+    }
+
+    .btn.primary {
+      background: linear-gradient(180deg, var(--blue), var(--blue2));
+    }
+
+    .btn.hard {
+      background: linear-gradient(180deg, #8b5cf6, #5b21b6);
+    }
+
+    .btn.danger {
+      background: linear-gradient(180deg, var(--red), var(--red2));
+    }
+
+    .btn.ghost {
+      background: rgba(255, 255, 255, 0.11);
+      border: 1px solid var(--line);
+    }
+
+    .btn.small {
+      min-height: 34px;
+      padding: 0 10px;
+      font-size: 0.78rem;
+      box-shadow: none;
+    }
+
+    .hidden-control {
+      display: none !important;
+    }
+
+    .btn:disabled,
+    .action-btn:disabled {
+      opacity: 0.56;
+      cursor: not-allowed;
+    }
+
+    .note {
+      margin: 12px 0 0;
+      color: var(--muted);
+      font-size: 0.78rem;
+      line-height: 1.45;
+    }
+
+    .countdown-number {
+      margin: 12px auto;
+      width: 116px;
+      height: 116px;
+      display: grid;
+      place-items: center;
+      border-radius: 999px;
+      background: #fff;
+      color: #111827;
+      font-size: 4.5rem;
+      font-weight: 1000;
+    }
+
+    .game-layout {
+      padding: 8px;
+      display: grid;
+      gap: 7px;
+    }
+
+    .game-top {
+      display: grid;
+      gap: 6px;
+    }
+
+    .status-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 8px;
+    }
+
+    .status-text p {
+      margin: 0;
+      text-align: left;
+      font-weight: 1000;
+      font-size: 0.84rem;
+    }
+
+    .mode {
+      color: var(--yellow);
+    }
+
+    .top-buttons {
+      display: flex;
+      gap: 6px;
+      flex-shrink: 0;
+    }
+
+    .reel-table-card {
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.055);
+      padding: 5px 6px;
+    }
+
+    .reel-table-title {
+      margin: 0 0 4px;
+      color: var(--muted);
+      font-size: 0.66rem;
+      font-weight: 900;
+      text-align: left;
+    }
+
+    .reel-table {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 3px;
+      align-items: center;
+    }
+
+    .symbol-chip {
+      min-width: 30px;
+      height: 20px;
+      padding: 0 3px;
+      border-radius: 8px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 1px;
+      background: rgba(255, 255, 255, 0.93);
+      color: #111827;
+      font-weight: 1000;
+      font-size: 0.77rem;
+      line-height: 1;
+    }
+
+    .symbol-chip .damage {
+      color: #dc2626;
+      font-size: 0.66rem;
+      transform: translateY(1px);
+    }
+
+    .enemy-card {
+      padding: 7px 9px;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: rgba(255, 255, 255, 0.055);
+      text-align: center;
+    }
+
+    .enemy-line {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+    }
+
+    .enemy-emoji {
+      font-size: 2.4rem;
+      line-height: 1;
+      filter: drop-shadow(0 7px 14px rgba(0, 0, 0, 0.32));
+    }
+
+    .hp-block {
+      flex: 1;
+      min-width: 0;
+      max-width: 250px;
+      text-align: left;
+    }
+
+    .hp-line {
+      margin: 0 0 5px;
+      font-weight: 1000;
+      font-size: 0.85rem;
+      letter-spacing: 0.02em;
+    }
+
+    .hp-bar {
+      width: 100%;
+      height: 10px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.13);
+      overflow: hidden;
+    }
+
+    .hp-fill {
+      width: 100%;
+      height: 100%;
+      border-radius: inherit;
+      background: linear-gradient(90deg, #22c55e, #facc15, #ef4444);
+      transition: width 240ms ease;
+    }
+
+    .slot-card {
+      background: #090d15;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 7px;
+      display: grid;
+      gap: 6px;
+    }
+
+    .canvas-row {
+      position: relative;
+      width: min(100%, 258px);
+      height: 46px;
+      margin: 0 auto;
+      border-radius: 13px;
+      overflow: hidden;
+      background: #fff;
+      box-shadow: inset 0 -4px 0 rgba(0,0,0,.11);
+    }
+
+    .canvas-row canvas {
+      width: 100%;
+      height: 46px;
+      display: block;
+      background: #fff;
+    }
+
+    .canvas-row.stopped {
+      outline: 2px solid rgba(34, 197, 94, 0.92);
+    }
+
+    .canvas-row.running {
+      outline: 2px solid rgba(250, 204, 21, 0.55);
+    }
+
+    .control-card {
+      display: grid;
+      gap: 7px;
+    }
+
+    .action-btn {
+      min-height: 54px;
+      border-radius: 17px;
+      color: #fff;
+      font-size: 1.02rem;
+      font-weight: 1000;
+      letter-spacing: 0.03em;
+      box-shadow: 0 12px 26px rgba(0, 0, 0, 0.26);
+    }
+
+    .action-btn.start {
+      background: linear-gradient(180deg, var(--blue), var(--blue2));
+    }
+
+    .action-btn.wait {
+      background: rgba(255, 255, 255, 0.16);
+    }
+
+    .action-btn.stop {
+      background: linear-gradient(180deg, var(--red), var(--red2));
+    }
+
+    .stop-gauge-wrap {
+      display: none;
+      background: rgba(255, 255, 255, 0.07);
+      border: 1px solid var(--line);
+      border-radius: 13px;
+      padding: 7px;
+    }
+
+    .stop-gauge-wrap.active {
+      display: block;
+    }
+
+    .stop-gauge-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 5px;
+      font-size: 0.78rem;
+      font-weight: 1000;
+    }
+
+    .stop-gauge {
+      height: 10px;
+      background: rgba(255, 255, 255, 0.14);
+      border-radius: 999px;
+      overflow: hidden;
+    }
+
+    .stop-gauge-fill {
+      width: 100%;
+      height: 100%;
+      border-radius: inherit;
+      background: linear-gradient(90deg, #facc15, #fb923c, #ef4444);
+    }
+
+    .message {
+      min-height: 39px;
+      padding: 8px 10px;
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.07);
+      border: 1px solid var(--line);
+      color: #fff;
+      font-weight: 900;
+      font-size: 0.84rem;
+      line-height: 1.35;
+      text-align: center;
+    }
+
+    .result-grid {
+      margin-top: 12px;
+      display: grid;
+      gap: 7px;
+      text-align: left;
+    }
+
+    .result-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 8px 10px;
+      border-radius: 12px;
+      border: 1px solid var(--line);
+      background: rgba(255, 255, 255, 0.07);
+      font-size: 0.88rem;
+      font-weight: 800;
+    }
+
+    .result-row strong {
+      text-align: right;
+    }
+
+    .send-status {
+      margin-top: 10px;
+      padding: 8px 10px;
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.07);
+      color: var(--muted);
+      font-weight: 800;
+      font-size: 0.84rem;
+    }
+
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 14px;
+      background: rgba(0, 0, 0, 0.62);
+      z-index: 100;
+    }
+
+    .modal-backdrop.active {
+      display: flex;
+    }
+
+    .modal {
+      width: min(100%, 380px);
+      padding: 18px;
+      border-radius: 20px;
+      border: 1px solid var(--line);
+      background: #182033;
+      box-shadow: var(--shadow);
+      color: var(--text);
+      text-align: left;
+    }
+
+    .modal p,
+    .modal li {
+      color: var(--muted);
+      line-height: 1.55;
+      font-weight: 700;
+      font-size: 0.9rem;
+    }
+
+    .modal ul {
+      padding-left: 1.15rem;
+      margin: 10px 0 0;
+    }
+
+    .input {
+      width: 100%;
+      min-height: 48px;
+      padding: 0 13px;
+      border: 1px solid var(--line);
+      border-radius: 13px;
+      background: #fff;
+      color: #111827;
+      font-size: 1rem;
+      font-weight: 800;
+    }
+
+    .toast {
+      position: fixed;
+      left: 50%;
+      bottom: 18px;
+      transform: translateX(-50%) translateY(18px);
+      padding: 10px 14px;
+      border-radius: 999px;
+      background: rgba(15, 23, 42, 0.96);
+      color: #fff;
+      border: 1px solid var(--line);
+      box-shadow: var(--shadow);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 160ms ease, transform 160ms ease;
+      z-index: 200;
+      white-space: nowrap;
+      font-size: 0.86rem;
+      font-weight: 900;
+    }
+
+    .toast.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+
+    @media (max-height: 760px) {
+      .app { padding: 7px; align-items: flex-start; }
+      .card, .game-layout { border-radius: 18px; padding: 9px; }
+      .canvas-row { width: min(100%, 228px); }
+      .canvas-row, .canvas-row canvas { height: 40px; }
+      .enemy-emoji { font-size: 2rem; }
+      .action-btn { min-height: 48px; }
+      .message { min-height: 34px; font-size: 0.8rem; }
+      .reel-table-title { display: none; }
+      .symbol-chip { min-width: 28px; height: 18px; font-size: .72rem; }
+      .symbol-chip .damage { font-size: .62rem; }
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <div class="shell">
+      <section id="homeScreen" class="screen active">
+        <div class="card home-card">
+          <p class="eyebrow">横回転スロットバトル</p>
+          <h1>目押しを制す</h1>
+          <p class="lead">横に流れる3本のリールを止めて、敵を倒す目押しゲームです。ハードでは中段だけ逆回転します。</p>
+
+          <div class="player-panel">
+            <p id="playerNameView">名前：未登録</p>
+            <button id="changeNameBtn" class="btn ghost small" type="button">名前を変更</button>
+          </div>
+
+          <div class="best-panel">
+            <p id="normalBestView">ノーマル ベスト：まだありません</p>
+            <p id="hardBestView">ハード ベスト：まだありません</p>
+          </div>
+
+          <div class="button-stack">
+            <button id="startNormalBtn" class="btn primary" type="button">ゲーム開始（ノーマル）</button>
+            <button id="startHardBtn" class="btn hard" type="button">ゲーム開始（ハード）</button>
+            <button id="ruleBtn" class="btn ghost" type="button">ルール説明</button>
+            <button id="shareGameBtn" class="btn ghost" type="button">ゲームをシェア</button>
+            <a class="btn ghost" href="https://chameleonjp.codeberg.page/chameleonjp_lab/">他のゲームで遊ぶ</a>
+          </div>
+
+          <p class="note">ゲーム開始には名前登録が必要です。クリア時はランキングへ自動送信します。</p>
+        </div>
+      </section>
+
+      <section id="countdownScreen" class="screen">
+        <div class="card countdown-card">
+          <p class="eyebrow">準備</p>
+          <h2 id="countdownMode">ノーマル</h2>
+          <div id="countdownNumber" class="countdown-number">3</div>
+          <p class="lead">開始後、強い絵柄を狙いましょう。</p>
+        </div>
+      </section>
+
+      <section id="gameScreen" class="screen">
+        <div class="game-layout">
+          <div class="game-top">
+            <div class="status-row">
+              <div class="status-text">
+                <p id="modeView" class="mode">モード：ノーマル</p>
+                <p id="turnView">使用ゲーム数：0</p>
+              </div>
+              <div class="top-buttons">
+                <button id="pauseBtn" class="btn ghost small" type="button">一時停止</button>
+                <button id="retireBtn" class="btn danger small" type="button">リタイア</button>
+              </div>
+            </div>
+
+            <div class="reel-table-card">
+              <p class="reel-table-title">今回の絵柄表（数字は小攻撃の1個あたりダメージ）</p>
+              <div id="reelTable" class="reel-table"></div>
+            </div>
+          </div>
+
+          <section class="enemy-card" aria-label="敵情報">
+            <div class="enemy-line">
+              <div id="enemyView" class="enemy-emoji">👹</div>
+              <div class="hp-block">
+                <div id="hpText" class="hp-line">HP 300 / 300</div>
+                <div class="hp-bar" aria-hidden="true"><div id="hpFill" class="hp-fill"></div></div>
+              </div>
+            </div>
+          </section>
+
+          <section class="slot-card" aria-label="リール">
+            <div id="rowBox0" class="canvas-row"><canvas id="reelCanvas0"></canvas></div>
+            <div id="rowBox1" class="canvas-row"><canvas id="reelCanvas1"></canvas></div>
+            <div id="rowBox2" class="canvas-row"><canvas id="reelCanvas2"></canvas></div>
+          </section>
+
+          <section class="control-card">
+            <button id="actionBtn" class="action-btn start" type="button">回転開始</button>
+            <div id="stopGaugeWrap" class="stop-gauge-wrap">
+              <div class="stop-gauge-head">
+                <span id="stopGaugeLabel">上段 受付中</span>
+                <span id="stopGaugeTime">5.00秒</span>
+              </div>
+              <div class="stop-gauge"><div id="stopGaugeFill" class="stop-gauge-fill"></div></div>
+            </div>
+            <div id="messageView" class="message">青いボタンでリールを回そう。</div>
+          </section>
+        </div>
+      </section>
+
+      <section id="resultScreen" class="screen">
+        <div class="card result-card">
+          <p class="eyebrow">目押しを制す</p>
+          <h2 id="resultTitle">結果：クリア</h2>
+          <div id="resultGrid" class="result-grid"></div>
+          <div id="sendStatus" class="send-status">送信待機中</div>
+          <div class="button-stack">
+            <button id="sendScoreBtn" class="btn primary hidden-control" type="button" aria-hidden="true" tabindex="-1">ランキングに登録</button>
+            <button id="shareResultBtn" class="btn ghost" type="button">ゲーム結果をシェア</button>
+            <button id="retryBtn" class="btn hard" type="button">再ゲーム</button>
+            <button id="finishBtn" class="btn ghost" type="button">ゲーム終了</button>
+            <a id="rankingLink" class="btn ghost" href="https://chameleonjp.codeberg.page/chameleonjp_lab/ranking.html?game=meoshi_wo_seisu">詳細ランキング</a>
+            <a class="btn ghost" href="https://chameleonjp.codeberg.page/chameleonjp_lab/">カメレオンJPの実験場へ</a>
+          </div>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <div id="nameModal" class="modal-backdrop" role="dialog" aria-modal="true">
+    <div class="modal">
+      <h3>名前登録（必須）</h3>
+      <p>ゲーム開始前に名前の登録が必要です。ランキングに使う名前を入力してください。次回以降もこのブラウザに保存します。</p>
+      <input id="nameInput" class="input" type="text" maxlength="16" placeholder="例：カメレオン" autocomplete="nickname">
+      <div class="button-stack">
+        <button id="saveNameBtn" class="btn primary" type="button">保存する</button>
+        <button id="closeNameBtn" class="btn ghost" type="button">ゲーム開始をやめる</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="ruleModal" class="modal-backdrop" role="dialog" aria-modal="true">
+    <div class="modal">
+      <h3>ルール説明</h3>
+      <ul>
+        <li>白い3本のリールは左から右へ流れます。ハードでは中段だけ逆向きに流れます。</li>
+        <li>青いボタンでリールを回します。1回転で使用ゲーム数が1増えます。</li>
+        <li>1秒後に赤ボタンへ変わります。上段、中段、下段の順に止めます。</li>
+        <li>停止時は、見えない判定枠に一番近い絵柄位置で止まります。</li>
+        <li>停止受付時間は、ノーマルが各段5.0秒、ハードが各段4.75秒です。</li>
+        <li>縦3列すべてが綺麗にそろうと150ダメージ、斜め1ラインで40ダメージです。</li>
+        <li>ラインなしの場合は、今回の絵柄表で小攻撃を計算します。小攻撃は最大35ダメージです。</li>
+        <li>クリア時は、結果画面で自動的にランキングへ送信します。</li>
+      </ul>
+      <div class="button-stack">
+        <button id="closeRuleBtn" class="btn primary" type="button">閉じる</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="pauseModal" class="modal-backdrop" role="dialog" aria-modal="true">
+    <div class="modal">
+      <h3>一時停止中</h3>
+      <div id="pauseInfo" class="mini-panel"></div>
+      <p>一時停止は、回転開始前だけ使えます。回転中と停止受付中は止められません。</p>
+      <div class="button-stack">
+        <button id="resumeBtn" class="btn primary" type="button">再開する</button>
+        <button id="pauseRetireBtn" class="btn danger" type="button">リタイア</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast" class="toast" role="status" aria-live="polite">コピーしました</div>
+
+  <script>
+    'use strict';
+
+    const SUPABASE_URL = 'https://mlpnjgezrnhdxsxolyzj.supabase.co';
+    const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_drzcy0v97knU6FgjqSgBHw_0A9XPdFM';
+    const CLIENT_VERSION = 'meoshi_wo_seisu_v20260611_quarter_speed_hard_reverse_hp500';
+    const LAB_URL = 'https://chameleonjp.codeberg.page/chameleonjp_lab/';
+    const DETAIL_RANKING_URL = 'https://chameleonjp.codeberg.page/chameleonjp_lab/ranking.html';
+    const DETAIL_DISPLAY_GAME_SLUG = 'meoshi_wo_seisu';
+    const GAME_URL = 'https://chameleonjp-lab.github.io/meoshi_wo_seisu/';
+
+    const GAME_SLUGS = {
+      normal: 'meoshi_wo_seisu_normal',
+      hard: 'meoshi_wo_seisu_hard'
+    };
+
+    const MODES = {
+      normal: {
+        key: 'normal',
+        label: 'ノーマル',
+        hp: 300,
+        speedPerSec: 8.5,
+        reverseMiddle: false,
+        stopLimitMs: 5000,
+        bestKey: 'meoshi_best_normal_turns'
+      },
+      hard: {
+        key: 'hard',
+        label: 'ハード',
+        hp: 500,
+        speedPerSec: 7.7,
+        reverseMiddle: true,
+        stopLimitMs: 4750,
+        bestKey: 'meoshi_best_hard_turns'
+      }
+    };
+
+    const SYMBOLS = ['🌿', '🥦', '🍀', '♻️', '🟢', '🌱', '☘️', '❇️', '🫛', '💚', '✳️', '❎', '🟩'];
+    const DAMAGE_VALUES = [3, 3, 4, 4, 4, 5, 5, 5, 6, 6, 6, 7, 7];
+    const ENEMIES = ['👹', '👾', '🤡'];
+    const STORAGE_NAME = 'chameleon_player_name';
+    const STORAGE_LAST_MODE = 'meoshi_last_mode';
+
+    const $ = (id) => document.getElementById(id);
+
+    const dom = {
+      screens: {
+        home: $('homeScreen'),
+        countdown: $('countdownScreen'),
+        game: $('gameScreen'),
+        result: $('resultScreen')
+      },
+      playerNameView: $('playerNameView'),
+      normalBestView: $('normalBestView'),
+      hardBestView: $('hardBestView'),
+      changeNameBtn: $('changeNameBtn'),
+      startNormalBtn: $('startNormalBtn'),
+      startHardBtn: $('startHardBtn'),
+      ruleBtn: $('ruleBtn'),
+      shareGameBtn: $('shareGameBtn'),
+      countdownMode: $('countdownMode'),
+      countdownNumber: $('countdownNumber'),
+      modeView: $('modeView'),
+      turnView: $('turnView'),
+      pauseBtn: $('pauseBtn'),
+      retireBtn: $('retireBtn'),
+      reelTable: $('reelTable'),
+      enemyView: $('enemyView'),
+      hpText: $('hpText'),
+      hpFill: $('hpFill'),
+      canvases: [$('reelCanvas0'), $('reelCanvas1'), $('reelCanvas2')],
+      rowBoxes: [$('rowBox0'), $('rowBox1'), $('rowBox2')],
+      actionBtn: $('actionBtn'),
+      stopGaugeWrap: $('stopGaugeWrap'),
+      stopGaugeLabel: $('stopGaugeLabel'),
+      stopGaugeTime: $('stopGaugeTime'),
+      stopGaugeFill: $('stopGaugeFill'),
+      messageView: $('messageView'),
+      resultTitle: $('resultTitle'),
+      resultGrid: $('resultGrid'),
+      sendStatus: $('sendStatus'),
+      sendScoreBtn: $('sendScoreBtn'),
+      shareResultBtn: $('shareResultBtn'),
+      retryBtn: $('retryBtn'),
+      finishBtn: $('finishBtn'),
+      rankingLink: $('rankingLink'),
+      nameModal: $('nameModal'),
+      nameInput: $('nameInput'),
+      saveNameBtn: $('saveNameBtn'),
+      closeNameBtn: $('closeNameBtn'),
+      ruleModal: $('ruleModal'),
+      closeRuleBtn: $('closeRuleBtn'),
+      pauseModal: $('pauseModal'),
+      pauseInfo: $('pauseInfo'),
+      resumeBtn: $('resumeBtn'),
+      pauseRetireBtn: $('pauseRetireBtn'),
+      toast: $('toast')
+    };
+
+    let pendingStartMode = null;
+    let pendingScoreSubmit = false;
+    let toastTimer = null;
+    let countdownTimer = null;
+    let spinReadyTimer = null;
+    let rowStopTimer = null;
+    let nextRowTimer = null;
+    let finishResultTimer = null;
+    let gaugeFrame = null;
+    let reelFrame = null;
+    let currentStopDeadline = 0;
+    let lastFrameAt = 0;
+
+    let game = createBlankGame();
+
+    function createBlankGame() {
+      return {
+        mode: MODES.normal,
+        phase: 'home',
+        enemy: ENEMIES[0],
+        maxHp: MODES.normal.hp,
+        hp: MODES.normal.hp,
+        reelOrder: [...SYMBOLS],
+        damageMap: new Map(),
+        rows: [
+          { phase: 0, running: false, stopped: true, board: [] },
+          { phase: 0, running: false, stopped: true, board: [] },
+          { phase: 0, running: false, stopped: true, board: [] }
+        ],
+        currentStopRow: 0,
+        turns: 0,
+        totalDamage: 0,
+        perfectCount: 0,
+        diagonalCount: 0,
+        smallAttackCount: 0,
+        noDamageCount: 0,
+        resultType: null,
+        scoreSubmitted: false,
+        scoreSubmitMessage: '送信待機中',
+        isBestUpdated: false,
+        lastAttack: null
+      };
+    }
+
+    function showScreen(name) {
+      Object.values(dom.screens).forEach((screen) => screen.classList.remove('active'));
+      dom.screens[name].classList.add('active');
+      requestAnimationFrame(() => {
+        resizeCanvases();
+        drawAllRows();
+      });
+    }
+
+    function openModal(modal) {
+      modal.classList.add('active');
+    }
+
+    function closeModal(modal) {
+      modal.classList.remove('active');
+    }
+
+    function getPlayerName() {
+      return (localStorage.getItem(STORAGE_NAME) || '').trim();
+    }
+
+    function setPlayerName(name) {
+      localStorage.setItem(STORAGE_NAME, name.trim().slice(0, 16));
+      updateHomeInfo();
+    }
+
+    function updateHomeInfo() {
+      const name = getPlayerName();
+      dom.playerNameView.textContent = name ? `名前：${name}` : '名前：未登録';
+      dom.normalBestView.textContent = `ノーマル ベスト：${getBestText('normal')}`;
+      dom.hardBestView.textContent = `ハード ベスト：${getBestText('hard')}`;
+    }
+
+    function getBestText(modeKey) {
+      const raw = localStorage.getItem(MODES[modeKey].bestKey);
+      return raw ? `${raw}ゲーム` : 'まだありません';
+    }
+
+    function requestStart(modeKey) {
+      localStorage.setItem(STORAGE_LAST_MODE, modeKey);
+      pendingStartMode = modeKey;
+      pendingScoreSubmit = false;
+      if (!getPlayerName()) {
+        dom.nameInput.value = '';
+        dom.closeNameBtn.textContent = 'ゲーム開始をやめる';
+        openModal(dom.nameModal);
+        setTimeout(() => dom.nameInput.focus(), 80);
+        showToast('ゲーム開始前に名前を登録してください');
+        return;
+      }
+      pendingStartMode = null;
+      beginCountdown(modeKey);
+    }
+
+    function saveNameFromInput() {
+      const value = dom.nameInput.value.trim().replace(/\s+/g, ' ');
+      if (!value) {
+        showToast('名前を入力してください');
+        return;
+      }
+      setPlayerName(value);
+      closeModal(dom.nameModal);
+      dom.closeNameBtn.textContent = '閉じる';
+      if (pendingStartMode) {
+        const modeToStart = pendingStartMode;
+        pendingStartMode = null;
+        beginCountdown(modeToStart);
+        return;
+      }
+      if (pendingScoreSubmit) {
+        pendingScoreSubmit = false;
+        submitScore();
+      }
+    }
+
+    function cancelNameModal() {
+      if (pendingStartMode) {
+        pendingStartMode = null;
+        pendingScoreSubmit = false;
+        dom.closeNameBtn.textContent = '閉じる';
+        closeModal(dom.nameModal);
+        showToast('ゲーム開始をキャンセルしました');
+        return;
+      }
+      pendingScoreSubmit = false;
+      dom.closeNameBtn.textContent = '閉じる';
+      closeModal(dom.nameModal);
+    }
+
+    function beginCountdown(modeKey) {
+      clearAllTimers();
+      const mode = MODES[modeKey];
+      dom.countdownMode.textContent = mode.label;
+      showScreen('countdown');
+      let n = 3;
+      dom.countdownNumber.textContent = String(n);
+      countdownTimer = setInterval(() => {
+        n -= 1;
+        if (n <= 0) {
+          clearInterval(countdownTimer);
+          countdownTimer = null;
+          startGame(modeKey);
+        } else {
+          dom.countdownNumber.textContent = String(n);
+        }
+      }, 900);
+    }
+
+    function startGame(modeKey) {
+      const mode = MODES[modeKey];
+      game = createBlankGame();
+      game.mode = mode;
+      game.enemy = pick(ENEMIES);
+      game.maxHp = mode.hp;
+      game.hp = mode.hp;
+      game.reelOrder = shuffle(SYMBOLS);
+      game.damageMap = createDamageMap(game.reelOrder);
+      game.rows.forEach((row) => {
+        row.phase = randomPhase();
+        row.running = false;
+        row.stopped = true;
+        row.board = captureBoardRow(row.phase);
+      });
+      game.phase = 'ready';
+      renderAll();
+      setActionState('start');
+      hideStopGauge();
+      dom.messageView.textContent = '青いボタンでリールを回そう。';
+      showScreen('game');
+      startReelLoop();
+    }
+
+    function shuffle(array) {
+      const result = [...array];
+      for (let i = result.length - 1; i > 0; i -= 1) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [result[i], result[j]] = [result[j], result[i]];
+      }
+      return result;
+    }
+
+    function pick(array) {
+      return array[Math.floor(Math.random() * array.length)];
+    }
+
+    function randomPhase() {
+      return Math.random() * game.reelOrder.length;
+    }
+
+    function createDamageMap(order) {
+      const values = shuffle(DAMAGE_VALUES);
+      const map = new Map();
+      order.forEach((symbol, index) => map.set(symbol, values[index]));
+      return map;
+    }
+
+    function renderAll() {
+      renderStatus();
+      renderReelTable();
+      drawAllRows();
+    }
+
+    function renderStatus() {
+      dom.modeView.textContent = `モード：${game.mode.label}`;
+      dom.turnView.textContent = `使用ゲーム数：${game.turns}`;
+      dom.enemyView.textContent = game.enemy;
+      dom.hpText.textContent = `HP ${Math.max(0, game.hp)} / ${game.maxHp}`;
+      const rate = Math.max(0, Math.min(100, (game.hp / game.maxHp) * 100));
+      dom.hpFill.style.width = `${rate}%`;
+      dom.pauseBtn.disabled = game.phase !== 'ready';
+      dom.retireBtn.disabled = ['home', 'finished', 'clearPending', 'judging'].includes(game.phase);
+      dom.rankingLink.href = `${DETAIL_RANKING_URL}?game=${encodeURIComponent(DETAIL_DISPLAY_GAME_SLUG)}`;
+    }
+
+    function renderReelTable() {
+      dom.reelTable.innerHTML = '';
+      game.reelOrder.forEach((symbol) => {
+        const chip = document.createElement('span');
+        chip.className = 'symbol-chip';
+        chip.innerHTML = `<span>${escapeHtml(symbol)}</span><span class="damage">${game.damageMap.get(symbol)}</span>`;
+        dom.reelTable.appendChild(chip);
+      });
+    }
+
+    function resizeCanvases() {
+      const dpr = Math.max(1, Math.min(3, window.devicePixelRatio || 1));
+      dom.canvases.forEach((canvas) => {
+        const rect = canvas.getBoundingClientRect();
+        const width = Math.max(1, Math.floor(rect.width * dpr));
+        const height = Math.max(1, Math.floor(rect.height * dpr));
+        if (canvas.width !== width || canvas.height !== height) {
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        }
+      });
+    }
+
+    function startReelLoop() {
+      cancelAnimationFrame(reelFrame);
+      lastFrameAt = performance.now();
+      const tick = (now) => {
+        const dt = Math.min(0.05, (now - lastFrameAt) / 1000 || 0);
+        lastFrameAt = now;
+        if (game.phase === 'spinning' || game.phase === 'stopping' || game.phase === 'rowLocked') {
+          for (let i = 0; i < 3; i += 1) {
+            if (game.rows[i].running) {
+              const direction = game.mode.reverseMiddle && i === 1 ? -1 : 1;
+              game.rows[i].phase += direction * game.mode.speedPerSec * dt;
+            }
+          }
+        }
+        drawAllRows();
+        reelFrame = requestAnimationFrame(tick);
+      };
+      reelFrame = requestAnimationFrame(tick);
+    }
+
+    function drawAllRows() {
+      resizeCanvases();
+      for (let row = 0; row < 3; row += 1) {
+        drawRow(row);
+      }
+    }
+
+    function drawRow(rowIndex) {
+      const canvas = dom.canvases[rowIndex];
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
+      const rect = canvas.getBoundingClientRect();
+      const w = rect.width;
+      const h = rect.height;
+      const row = game.rows[rowIndex];
+      // 先読み防止のため、表示幅は3絵柄ぶんだけにする。
+      // 3×3の判定枠は見せず、白いcanvasの中で3個前後だけが流れて見える設計。
+      const cellW = w / 3;
+      const centerX = w / 2;
+      const phase = row.phase;
+      const minI = Math.floor(phase - 3);
+      const maxI = Math.ceil(phase + 3);
+
+      ctx.clearRect(0, 0, w, h);
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, w, h);
+
+      ctx.save();
+      ctx.beginPath();
+      ctx.rect(0, 0, w, h);
+      ctx.clip();
+
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      const fontSize = Math.max(22, Math.min(30, h * 0.62));
+      ctx.font = `700 ${fontSize}px Apple Color Emoji, Segoe UI Emoji, Noto Color Emoji, system-ui, sans-serif`;
+
+      for (let i = minI; i <= maxI; i += 1) {
+        const x = centerX + (phase - i) * cellW;
+        if (x < -cellW || x > w + cellW) continue;
+        const symbol = symbolAt(i);
+        ctx.fillText(symbol, x, h / 2 + 1);
+      }
+
+      ctx.restore();
+
+      if (!row.running && row.stopped) {
+        ctx.save();
+        ctx.strokeStyle = 'rgba(34, 197, 94, 0.48)';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(1, 1, w - 2, h - 2);
+        ctx.restore();
+      }
+    }
+
+    function symbolAt(index) {
+      const n = game.reelOrder.length;
+      return game.reelOrder[((index % n) + n) % n];
+    }
+
+    function captureBoardRow(phase) {
+      const p = Math.round(phase);
+      // 画面上で中心に最も近い絵柄を中央列に吸着し、左右の近い絵柄も内部判定用に保持する。
+      // ユーザーには3×3枠は見せない。
+      return [symbolAt(p + 1), symbolAt(p), symbolAt(p - 1)];
+    }
+
+    function setActionState(state, label) {
+      dom.actionBtn.className = 'action-btn';
+      dom.actionBtn.disabled = false;
+      if (state === 'start') {
+        dom.actionBtn.classList.add('start');
+        dom.actionBtn.textContent = '回転開始';
+      } else if (state === 'wait') {
+        dom.actionBtn.classList.add('wait');
+        dom.actionBtn.textContent = '回転中...';
+        dom.actionBtn.disabled = true;
+      } else if (state === 'stop') {
+        dom.actionBtn.classList.add('stop');
+        dom.actionBtn.textContent = label;
+      } else {
+        dom.actionBtn.classList.add('wait');
+        dom.actionBtn.textContent = label || '待機中';
+        dom.actionBtn.disabled = true;
+      }
+    }
+
+    function handleAction() {
+      if (game.phase === 'ready') {
+        startTurn();
+        return;
+      }
+      if (game.phase === 'stopping') {
+        stopCurrentRow(false);
+      }
+    }
+
+    function startTurn() {
+      clearTurnTimersOnly();
+      game.phase = 'spinning';
+      game.turns += 1;
+      game.currentStopRow = 0;
+      game.rows.forEach((row, index) => {
+        row.phase = randomPhase();
+        row.running = true;
+        row.stopped = false;
+        row.board = [];
+        dom.rowBoxes[index].classList.remove('stopped');
+        dom.rowBoxes[index].classList.add('running');
+      });
+      hideStopGauge();
+      setActionState('wait');
+      dom.messageView.textContent = '1秒後に停止受付が始まります。';
+      renderStatus();
+      spinReadyTimer = setTimeout(() => {
+        if (game.phase !== 'spinning') return;
+        beginStopWindow(0);
+      }, 1000);
+    }
+
+    function beginStopWindow(row) {
+      game.phase = 'stopping';
+      game.currentStopRow = row;
+      const label = row === 0 ? '上段を止める' : row === 1 ? '中段を止める' : '下段を止める';
+      setActionState('stop', label);
+      dom.messageView.textContent = `${rowLabel(row)}の停止受付中。ゲージがなくなると自動停止します。`;
+      showStopGauge(row);
+      currentStopDeadline = performance.now() + game.mode.stopLimitMs;
+      rowStopTimer = setTimeout(() => stopCurrentRow(true), game.mode.stopLimitMs);
+      animateGauge();
+      renderStatus();
+    }
+
+    function rowLabel(row) {
+      return row === 0 ? '上段' : row === 1 ? '中段' : '下段';
+    }
+
+    function showStopGauge(row) {
+      dom.stopGaugeWrap.classList.add('active');
+      dom.stopGaugeLabel.textContent = `${rowLabel(row)} 受付中`;
+      dom.stopGaugeTime.textContent = `${(game.mode.stopLimitMs / 1000).toFixed(2)}秒`;
+      dom.stopGaugeFill.style.width = '100%';
+    }
+
+    function hideStopGauge() {
+      dom.stopGaugeWrap.classList.remove('active');
+      dom.stopGaugeFill.style.width = '0%';
+    }
+
+    function animateGauge() {
+      cancelAnimationFrame(gaugeFrame);
+      const total = game.mode.stopLimitMs;
+      const tick = () => {
+        if (game.phase !== 'stopping') return;
+        const remaining = Math.max(0, currentStopDeadline - performance.now());
+        const rate = Math.max(0, Math.min(100, (remaining / total) * 100));
+        dom.stopGaugeFill.style.width = `${rate}%`;
+        dom.stopGaugeTime.textContent = `${(remaining / 1000).toFixed(2)}秒`;
+        if (remaining > 0) {
+          gaugeFrame = requestAnimationFrame(tick);
+        }
+      };
+      gaugeFrame = requestAnimationFrame(tick);
+    }
+
+    function stopCurrentRow(isAuto) {
+      if (game.phase !== 'stopping') return;
+      game.phase = 'rowLocked';
+      setActionState('disabled', '停止中...');
+      clearTimeout(rowStopTimer);
+      clearTimeout(nextRowTimer);
+      rowStopTimer = null;
+      nextRowTimer = null;
+      cancelAnimationFrame(gaugeFrame);
+      gaugeFrame = null;
+
+      const rowIndex = game.currentStopRow;
+      const row = game.rows[rowIndex];
+      const snapped = Math.round(row.phase);
+      row.phase = snapped;
+      row.running = false;
+      row.stopped = true;
+      row.board = captureBoardRow(snapped);
+      dom.rowBoxes[rowIndex].classList.remove('running');
+      dom.rowBoxes[rowIndex].classList.add('stopped');
+      drawRow(rowIndex);
+
+      if (isAuto) {
+        dom.messageView.textContent = `${rowLabel(rowIndex)}は時間切れで自動停止しました。`;
+      }
+
+      const nextRow = rowIndex + 1;
+      if (nextRow <= 2) {
+        nextRowTimer = setTimeout(() => {
+          if (game.phase !== 'rowLocked') return;
+          beginStopWindow(nextRow);
+        }, isAuto ? 220 : 80);
+        renderStatus();
+        return;
+      }
+
+      hideStopGauge();
+      finishTurn();
+    }
+
+    function finishTurn() {
+      game.phase = 'judging';
+      game.rows.forEach((row) => {
+        row.running = false;
+        row.stopped = true;
+      });
+      setActionState('disabled', '判定中...');
+
+      const board = getBoard();
+      const attack = judgeAttack(board);
+      game.lastAttack = attack;
+      game.totalDamage += attack.damage;
+      game.hp = Math.max(0, game.hp - attack.damage);
+
+      if (attack.type === 'perfect') game.perfectCount += 1;
+      if (attack.type === 'diagonal') game.diagonalCount += 1;
+      if (attack.type === 'small') game.smallAttackCount += 1;
+      if (attack.type === 'none') game.noDamageCount += 1;
+
+      renderStatus();
+      dom.messageView.textContent = attack.message;
+
+      if (game.hp <= 0) {
+        game.phase = 'clearPending';
+        setActionState('disabled', '結果へ...');
+        dom.pauseBtn.disabled = true;
+        dom.retireBtn.disabled = true;
+        finishResultTimer = setTimeout(() => {
+          if (game.phase === 'clearPending') finishGame('clear');
+        }, 700);
+        return;
+      }
+
+      game.phase = 'ready';
+      setActionState('start');
+      renderStatus();
+    }
+
+    function getBoard() {
+      return game.rows.map((row) => row.board.length ? [...row.board] : captureBoardRow(row.phase));
+    }
+
+    function judgeAttack(board) {
+      if (isPerfectVertical(board)) {
+        return { type: 'perfect', damage: 150, message: '完全目押し！150ダメージ！' };
+      }
+      if (hasDiagonal(board)) {
+        return { type: 'diagonal', damage: 40, message: '斜めライン成立！40ダメージ！' };
+      }
+      const small = calculateSmallAttack(board);
+      if (small.damage <= 0) {
+        return { type: 'none', damage: 0, message: '攻撃ならず。0ダメージ。' };
+      }
+      const suffix = small.details.length ? `（${small.details.join(' / ')}）` : '';
+      const capText = small.rawDamage > small.damage ? `計算上${small.rawDamage} → 上限35。` : '';
+      return { type: 'small', damage: small.damage, message: `小攻撃！${small.damage}ダメージ！${capText}${suffix}` };
+    }
+
+    function isPerfectVertical(board) {
+      for (let col = 0; col < 3; col += 1) {
+        if (!(board[0][col] === board[1][col] && board[1][col] === board[2][col])) {
+          return false;
+        }
+      }
+      return true;
+    }
+
+    function hasDiagonal(board) {
+      const left = board[0][0] === board[1][1] && board[1][1] === board[2][2];
+      const right = board[0][2] === board[1][1] && board[1][1] === board[2][0];
+      return left || right;
+    }
+
+    function calculateSmallAttack(board) {
+      const counts = new Map();
+      board.flat().forEach((symbol) => counts.set(symbol, (counts.get(symbol) || 0) + 1));
+      let rawDamage = 0;
+      const details = [];
+      counts.forEach((count, symbol) => {
+        if (count >= 2) {
+          const value = game.damageMap.get(symbol) || 0;
+          const damage = value * count;
+          rawDamage += damage;
+          details.push(`${symbol}${count}つ×${value}`);
+        }
+      });
+      return { damage: Math.min(35, rawDamage), rawDamage, details };
+    }
+
+    function pauseGame() {
+      if (game.phase !== 'ready') {
+        showToast('一時停止は回転開始前だけ使えます');
+        return;
+      }
+      game.phase = 'paused';
+      dom.pauseInfo.innerHTML = `
+        <p>モード：${escapeHtml(game.mode.label)}</p>
+        <p>使用ゲーム数：${game.turns}ゲーム</p>
+        <p>敵HP：${game.hp} / ${game.maxHp}</p>
+      `;
+      renderStatus();
+      openModal(dom.pauseModal);
+    }
+
+    function resumeGame() {
+      if (game.phase === 'paused') {
+        game.phase = 'ready';
+        renderStatus();
+      }
+      closeModal(dom.pauseModal);
+    }
+
+    function retireGame() {
+      if (['home', 'finished', 'clearPending'].includes(game.phase)) return;
+      closeModal(dom.pauseModal);
+      finishGame('retire');
+    }
+
+    function finishGame(type) {
+      if (game.phase === 'finished' && game.resultType) return;
+      clearAllTimers();
+      game.phase = 'finished';
+      game.resultType = type;
+      if (type === 'clear') {
+        saveBest();
+      }
+      renderResult();
+      showScreen('result');
+
+      if (type === 'clear') {
+        setTimeout(() => {
+          if (game.resultType === 'clear' && game.phase === 'finished' && !game.scoreSubmitted) {
+            submitScore();
+          }
+        }, 250);
+      }
+    }
+
+    function saveBest() {
+      const key = game.mode.bestKey;
+      const current = Number(localStorage.getItem(key));
+      if (!current || game.turns < current) {
+        localStorage.setItem(key, String(game.turns));
+        game.isBestUpdated = true;
+      } else {
+        game.isBestUpdated = false;
+      }
+      updateHomeInfo();
+    }
+
+    function renderResult() {
+      const isClear = game.resultType === 'clear';
+      dom.resultTitle.textContent = isClear ? '結果：クリア' : '結果：リタイア';
+      const hpLabel = isClear ? '敵HP' : '敵の残りHP';
+      const hpValue = isClear ? `0 / ${game.maxHp}` : `${game.hp} / ${game.maxHp}`;
+      const finalScore = isClear ? `${game.turns}ゲーム` : 'リタイア';
+      const bestText = isClear
+        ? (game.isBestUpdated ? 'ベスト更新！' : getBestText(game.mode.key))
+        : 'リタイアは登録されません';
+
+      dom.resultGrid.innerHTML = `
+        <div class="result-row"><span>モード</span><strong>${escapeHtml(game.mode.label)}</strong></div>
+        <div class="result-row"><span>敵</span><strong>${escapeHtml(game.enemy)}</strong></div>
+        <div class="result-row"><span>使用ゲーム数</span><strong>${game.turns}ゲーム</strong></div>
+        <div class="result-row"><span>${hpLabel}</span><strong>${hpValue}</strong></div>
+        <div class="result-row"><span>最終スコア</span><strong>${finalScore}</strong></div>
+        <div class="result-row"><span>完全目押し</span><strong>${game.perfectCount}回</strong></div>
+        <div class="result-row"><span>斜めライン</span><strong>${game.diagonalCount}回</strong></div>
+        <div class="result-row"><span>小攻撃</span><strong>${game.smallAttackCount}回</strong></div>
+        <div class="result-row"><span>合計ダメージ</span><strong>${game.totalDamage}</strong></div>
+        <div class="result-row"><span>ベスト</span><strong>${escapeHtml(bestText)}</strong></div>
+      `;
+
+      game.scoreSubmitted = false;
+      game.scoreSubmitMessage = isClear ? 'ランキング自動送信中...' : 'リタイア結果の送信はありません。';
+      dom.sendStatus.textContent = game.scoreSubmitMessage;
+      dom.sendScoreBtn.disabled = true;
+      dom.sendScoreBtn.textContent = isClear ? '自動送信中' : '登録対象外';
+      dom.rankingLink.href = `${DETAIL_RANKING_URL}?game=${encodeURIComponent(DETAIL_DISPLAY_GAME_SLUG)}`;
+    }
+
+    function isSupabaseReady() {
+      return /^https:\/\/.+\.supabase\.co\/?$/.test(SUPABASE_URL) && SUPABASE_PUBLISHABLE_KEY.startsWith('sb_publishable_');
+    }
+
+    async function submitScore() {
+      if (game.resultType !== 'clear') return;
+      if (game.scoreSubmitted) {
+        dom.sendStatus.textContent = 'この結果は送信済みです。';
+        dom.sendScoreBtn.textContent = '自動送信済み';
+        dom.sendScoreBtn.disabled = true;
+        return;
+      }
+      const playerName = getPlayerName();
+      if (!playerName) {
+        dom.sendStatus.textContent = '名前がないため自動送信できません。ホームで名前を登録してから遊んでください。';
+        dom.sendScoreBtn.textContent = '自動送信失敗';
+        dom.sendScoreBtn.disabled = true;
+        return;
+      }
+      if (!isSupabaseReady()) {
+        dom.sendStatus.textContent = 'Supabase設定が未完了のため送信できません。';
+        dom.sendScoreBtn.textContent = '自動送信失敗';
+        dom.sendScoreBtn.disabled = true;
+        return;
+      }
+
+      dom.sendScoreBtn.disabled = true;
+      dom.sendScoreBtn.textContent = '自動送信中...';
+      dom.sendStatus.textContent = 'ランキング自動送信中...';
+      try {
+        const response = await fetch(`${SUPABASE_URL.replace(/\/$/, '')}/rest/v1/rpc/submit_score`, {
+          method: 'POST',
+          headers: {
+            apikey: SUPABASE_PUBLISHABLE_KEY,
+            Authorization: `Bearer ${SUPABASE_PUBLISHABLE_KEY}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            p_display_name: playerName,
+            p_game_slug: GAME_SLUGS[game.mode.key],
+            p_score: game.turns,
+            p_client_version: CLIENT_VERSION
+          })
+        });
+        const responseText = await response.text();
+        if (!response.ok) {
+          throw new Error(responseText || `HTTP ${response.status}`);
+        }
+        game.scoreSubmitted = true;
+        dom.sendStatus.textContent = 'ランキングへ自動登録しました。';
+        dom.sendScoreBtn.textContent = '自動送信済み';
+        dom.sendScoreBtn.disabled = true;
+      } catch (error) {
+        console.error(error);
+        dom.sendStatus.textContent = 'ランキング自動送信に失敗しました。通信状況かSupabase設定を確認してください。';
+        dom.sendScoreBtn.textContent = '自動送信失敗';
+        dom.sendScoreBtn.disabled = true;
+      }
+    }
+
+    function retrySameMode() {
+      beginCountdown(game.mode.key);
+    }
+
+    function finishToHome() {
+      clearAllTimers();
+      game = createBlankGame();
+      updateHomeInfo();
+      showScreen('home');
+    }
+
+    function buildGameShareText() {
+      return [
+        '目押しを制す',
+        '横回転リールを目押しで止めて、敵を倒すスマホゲーム。',
+        GAME_URL
+      ].join('\n');
+    }
+
+    function buildResultShareText() {
+      const isClear = game.resultType === 'clear';
+      const lines = [
+        '目押しを制す 結果',
+        `結果：${isClear ? 'クリア' : 'リタイア'}`,
+        `モード：${game.mode.label}`,
+        `敵：${game.enemy}`,
+        `使用ゲーム数：${game.turns}ゲーム`
+      ];
+      if (!isClear) {
+        lines.push(`敵の残りHP：${game.hp} / ${game.maxHp}`);
+      }
+      lines.push(
+        `完全目押し：${game.perfectCount}回`,
+        `斜めライン：${game.diagonalCount}回`,
+        `小攻撃：${game.smallAttackCount}回`,
+        `合計ダメージ：${game.totalDamage}`,
+        `最終スコア：${isClear ? `${game.turns}ゲーム` : 'リタイア'}`,
+        GAME_URL
+      );
+      return lines.join('\n');
+    }
+
+    async function copyText(text) {
+      try {
+        await navigator.clipboard.writeText(text);
+        showToast('クリップボードにコピーしました');
+      } catch (error) {
+        const textarea = document.createElement('textarea');
+        textarea.value = text;
+        textarea.setAttribute('readonly', '');
+        textarea.style.position = 'fixed';
+        textarea.style.top = '-9999px';
+        document.body.appendChild(textarea);
+        textarea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textarea);
+        showToast('クリップボードにコピーしました');
+      }
+    }
+
+    function showToast(message) {
+      dom.toast.textContent = message;
+      dom.toast.classList.add('show');
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => dom.toast.classList.remove('show'), 1100);
+    }
+
+    function clearTurnTimersOnly() {
+      clearTimeout(spinReadyTimer);
+      clearTimeout(rowStopTimer);
+      clearTimeout(nextRowTimer);
+      clearTimeout(finishResultTimer);
+      spinReadyTimer = null;
+      rowStopTimer = null;
+      nextRowTimer = null;
+      finishResultTimer = null;
+      cancelAnimationFrame(gaugeFrame);
+      gaugeFrame = null;
+    }
+
+    function clearAllTimers() {
+      clearTurnTimersOnly();
+      clearInterval(countdownTimer);
+      countdownTimer = null;
+      cancelAnimationFrame(reelFrame);
+      reelFrame = null;
+      game.rows.forEach((row, index) => {
+        row.running = false;
+        dom.rowBoxes[index]?.classList.remove('running');
+      });
+      hideStopGauge();
+    }
+
+    function bindTap(element, handler) {
+      if (!element) return;
+      let last = 0;
+      const wrapped = (event) => {
+        if (event.cancelable) event.preventDefault();
+        const now = Date.now();
+        if (now - last < 90) return;
+        last = now;
+        handler(event);
+      };
+      if (window.PointerEvent) {
+        element.addEventListener('pointerup', wrapped);
+      } else {
+        element.addEventListener('touchend', wrapped, { passive: false });
+      }
+      element.addEventListener('click', wrapped);
+    }
+
+    function bindEvents() {
+      bindTap(dom.startNormalBtn, () => requestStart('normal'));
+      bindTap(dom.startHardBtn, () => requestStart('hard'));
+      bindTap(dom.ruleBtn, () => openModal(dom.ruleModal));
+      bindTap(dom.closeRuleBtn, () => closeModal(dom.ruleModal));
+      bindTap(dom.changeNameBtn, () => {
+        dom.nameInput.value = getPlayerName();
+        pendingStartMode = null;
+        pendingScoreSubmit = false;
+        dom.closeNameBtn.textContent = '閉じる';
+        openModal(dom.nameModal);
+        setTimeout(() => dom.nameInput.focus(), 60);
+      });
+      bindTap(dom.saveNameBtn, saveNameFromInput);
+      bindTap(dom.closeNameBtn, cancelNameModal);
+      dom.nameInput.addEventListener('keydown', (event) => {
+        if (event.key === 'Enter') saveNameFromInput();
+      });
+      bindTap(dom.shareGameBtn, () => copyText(buildGameShareText()));
+      bindTap(dom.actionBtn, handleAction);
+      bindTap(dom.pauseBtn, pauseGame);
+      bindTap(dom.retireBtn, retireGame);
+      bindTap(dom.resumeBtn, resumeGame);
+      bindTap(dom.pauseRetireBtn, retireGame);
+      bindTap(dom.sendScoreBtn, submitScore);
+      bindTap(dom.shareResultBtn, () => copyText(buildResultShareText()));
+      bindTap(dom.retryBtn, retrySameMode);
+      bindTap(dom.finishBtn, finishToHome);
+
+      window.addEventListener('resize', () => {
+        resizeCanvases();
+        drawAllRows();
+      });
+
+      document.addEventListener('gesturestart', (event) => event.preventDefault());
+      document.addEventListener('contextmenu', (event) => {
+        if (event.target.tagName !== 'INPUT') event.preventDefault();
+      });
+    }
+
+    function escapeHtml(value) {
+      return String(value).replace(/[&<>"']/g, (char) => ({
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#39;'
+      }[char]));
+    }
+
+    bindEvents();
+    updateHomeInfo();
+    resizeCanvases();
+    drawAllRows();
+  </script>
+</body>
+</html>
