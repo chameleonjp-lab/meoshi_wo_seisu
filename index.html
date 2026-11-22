@@ -634,6 +634,11 @@
       white-space: normal;
       overflow-wrap: anywhere;
     }
+
+    .result-ranks { margin-block: 14px; }
+    .result-ranks ol { list-style: none; margin: 8px 0; padding: 0; }
+    .result-ranks li { display: grid; grid-template-columns: minmax(2ch, max-content) minmax(0, 1fr) minmax(0, max-content); gap: 8px; padding-block: 6px; overflow-wrap: anywhere; }
+    .result-ranks button[hidden] { display: none; }
   </style>
 </head>
 <body>
@@ -738,6 +743,12 @@
           <h2 id="resultTitle" data-l10n="resultLine:clear">結果：クリア</h2>
           <div id="resultGrid" class="result-grid"></div>
           <div id="sendStatus" class="send-status" data-l10n="waiting">送信待機中</div>
+          <section class="result-ranks" aria-labelledby="resultRankingHeading">
+            <h3 id="resultRankingHeading">ベストランキング（上位30名）</h3>
+            <p id="resultRankingStatus" role="status"></p>
+            <ol id="resultRankingEntries" role="list"></ol>
+            <button id="retryResultRanking" class="btn ghost" type="button" hidden>ランキングを再取得</button>
+          </section>
           <div class="button-stack">
             <button id="sendScoreBtn" class="btn primary hidden-control" type="button" aria-hidden="true" tabindex="-1" data-l10n="rankSubmit">ランキングに登録</button>
             <button id="shareResultBtn" class="btn ghost x-share-button" type="button" data-l10n="shareResult">Xでシェア</button>
@@ -962,6 +973,10 @@
       retryBtn: $('retryBtn'),
       finishBtn: $('finishBtn'),
       rankingLink: $('rankingLink'),
+      resultRankingHeading: $('resultRankingHeading'),
+      resultRankingStatus: $('resultRankingStatus'),
+      resultRankingEntries: $('resultRankingEntries'),
+      retryResultRanking: $('retryResultRanking'),
       nameModal: $('nameModal'),
       nameInput: $('nameInput'),
       saveNameBtn: $('saveNameBtn'),
@@ -1587,9 +1602,13 @@
         saveBest();
       }
       renderResult();
+      resetResultRanking();
       showScreen('result');
 
-      if (type === 'clear' && game.play?.name) void submitScore();
+      const result = game;
+      const refresh = () => loadResultRanking(result);
+      if (type === 'clear' && result.play?.name) void submitScore().then(refresh, refresh);
+      else void refresh();
     }
 
     function saveBest() {
@@ -1637,6 +1656,63 @@
 
     function isSupabaseReady() {
       return /^https:\/\/.+\.supabase\.co\/?$/.test(SUPABASE_URL) && SUPABASE_PUBLISHABLE_KEY.startsWith('sb_publishable_');
+    }
+
+    const TOP_RANKING_LIMIT = 30;
+    const resultRankingLabels = {"ja":["ベストランキング（上位30名）","ランキングを読み込み中…","記録がありません。","ランキングを取得できませんでした。","ランキングを再取得"],"en":["Best scores (top 30)","Loading rankings…","No records yet.","Could not load rankings.","Retry loading rankings"],"es":["Mejores puntuaciones (30 primeros)","Cargando clasificación…","Aún no hay registros.","No se pudo cargar la clasificación.","Volver a cargar la clasificación"],"pt-BR":["Melhores pontuações (30 primeiros)","Carregando ranking…","Ainda não há registros.","Não foi possível carregar o ranking.","Carregar ranking novamente"],"zh-Hans":["最佳成绩（前30名）","正在加载排行榜…","暂无记录。","无法加载排行榜。","重新加载排行榜"],"zh-Hant":["最佳成績（前30名）","正在載入排行榜…","暫無紀錄。","無法載入排行榜。","重新載入排行榜"],"fr":["Meilleurs scores (30 premiers)","Chargement du classement…","Aucun résultat pour l’instant.","Impossible de charger le classement.","Recharger le classement"],"de":["Bestleistungen (Top 30)","Rangliste wird geladen…","Noch keine Ergebnisse.","Rangliste konnte nicht geladen werden.","Rangliste erneut laden"],"ko":["최고 기록 (상위 30명)","순위표를 불러오는 중…","아직 기록이 없습니다.","순위표를 불러오지 못했습니다.","순위표 다시 불러오기"],"ru":["Лучшие результаты (топ-30)","Загрузка рейтинга…","Записей пока нет.","Не удалось загрузить рейтинг.","Загрузить рейтинг снова"],"it":["Migliori risultati (primi 30)","Caricamento della classifica…","Non ci sono ancora risultati.","Impossibile caricare la classifica.","Ricarica la classifica"],"id":["Skor terbaik (30 teratas)","Memuat papan peringkat…","Belum ada catatan.","Gagal memuat papan peringkat.","Muat ulang papan peringkat"],"tr":["En iyi skorlar (ilk 30)","Sıralama yükleniyor…","Henüz kayıt yok.","Sıralama yüklenemedi.","Sıralamayı yeniden yükle"],"vi":["Điểm cao nhất (30 người dẫn đầu)","Đang tải bảng xếp hạng…","Chưa có kết quả.","Không thể tải bảng xếp hạng.","Tải lại bảng xếp hạng"],"th":["คะแนนสูงสุด (30 อันดับแรก)","กำลังโหลดตารางอันดับ…","ยังไม่มีสถิติ","โหลดตารางอันดับไม่ได้","โหลดตารางอันดับอีกครั้ง"]};
+    let resultRankingToken = 0;
+
+    function rankingLabel(index) {
+      return (resultRankingLabels[language] ?? resultRankingLabels.ja)[index];
+    }
+
+    function resetResultRanking() {
+      dom.resultRankingHeading.textContent = rankingLabel(0);
+      dom.resultRankingEntries.replaceChildren();
+      dom.resultRankingStatus.textContent = rankingLabel(1);
+      dom.retryResultRanking.textContent = rankingLabel(4);
+      dom.retryResultRanking.hidden = true;
+    }
+
+    async function loadResultRanking(result) {
+      if (!result || !(game === result && activeScreen === 'result')) return;
+      const token = ++resultRankingToken;
+      const isCurrent = () => (game === result && activeScreen === 'result') && resultRankingToken === token;
+      resetResultRanking();
+      try {
+        const slug = (Object.hasOwn(GAME_SLUGS, result.play?.modeKey) ? GAME_SLUGS[result.play.modeKey] : null);
+        if (!slug || !isSupabaseReady()) throw new Error("Ranking unavailable");
+        const response = await fetch(`${SUPABASE_URL.replace(/\/$/, '')}/rest/v1/rpc/get_best_score_ranking`, {
+          method: "POST",
+          headers: {
+            apikey: SUPABASE_PUBLISHABLE_KEY,
+            Authorization: `Bearer ${SUPABASE_PUBLISHABLE_KEY}`,
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({ p_game_slug: slug, p_limit: TOP_RANKING_LIMIT })
+        });
+        if (!response.ok) throw new Error(`Ranking HTTP ${response.status}`);
+        const rows = await response.json();
+        if (!Array.isArray(rows)) throw new Error("Invalid ranking response");
+        if (!isCurrent()) return;
+        dom.resultRankingStatus.textContent = rows.length ? "" : rankingLabel(2);
+        dom.resultRankingEntries.replaceChildren(...rows.slice(0, TOP_RANKING_LIMIT).map(row => {
+          const entry = document.createElement("li");
+          const rank = document.createElement("span");
+          const name = document.createElement("span");
+          const score = document.createElement("span");
+          rank.textContent = row.rank_no == null ? "—" : String(row.rank_no);
+          name.textContent = row.display_name == null ? "—" : String(row.display_name);
+          score.textContent = row.best_score == null ? "—" : t('turns', {n: row.best_score});
+          entry.append(rank, name, score);
+          return entry;
+        }));
+      } catch (error) {
+        if (!isCurrent()) return;
+        console.warn(error);
+        dom.resultRankingStatus.textContent = rankingLabel(3);
+        dom.retryResultRanking.hidden = false;
+      }
     }
 
     async function submitScore() {
@@ -1875,6 +1951,7 @@
       bindTap(dom.pauseRetireBtn, retireGame);
       bindTap(dom.sendScoreBtn, submitScore);
       dom.shareResultBtn.addEventListener('click', () => shareText(buildResultShareText()));
+      dom.retryResultRanking.addEventListener("click", () => void loadResultRanking(game));
       bindTap(dom.retryBtn, retrySameMode);
       bindTap(dom.finishBtn, finishToHome);
 
