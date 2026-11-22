@@ -1714,7 +1714,7 @@
         t('resultLine',{value:t(isClear ? 'clear' : 'retire')}),
         displayLabel('mode', modeLabel(game.mode.key)),
         displayLabel('enemy',game.enemy),
-        `${displayLabel('used',t('turns',{n:game.turns}))}`
+        displayLabel(isClear ? 'final' : 'used', t('turns',{n:game.turns}))
       ];
       if (!isClear) {
         lines.push(displayLabel('remainingHP',`${game.hp} / ${game.maxHp}`));
@@ -1724,7 +1724,6 @@
         displayLabel('diagonal',t('withCount',{n:game.diagonalCount})),
         displayLabel('small',t('withCount',{n:game.smallAttackCount})),
         displayLabel('damage',game.totalDamage),
-        displayLabel('final',isClear ? t('turns',{n:game.turns}) : t('retire')),
         GAME_URL
       );
       return lines.join('\n');
