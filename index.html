@@ -1158,6 +1158,8 @@ function requestInlineStart(modeKey) {
     }
 
     function startGame(modeKey, play) {
+      void import(/* @vite-ignore */ "https://chameleonjp-lab.github.io/chameleonjp_lab/play-start.js").then(module => module.recordPlayStart(GAME_SLUGS[modeKey])).catch(() => {});
+
       const mode = MODES[modeKey];
       game = createBlankGame();
       game.play = play;
